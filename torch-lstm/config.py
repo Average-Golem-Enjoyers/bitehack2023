@@ -1,6 +1,11 @@
+# network hyperparameters
 INPUT_SIZE = 21
 HIDDEN_SIZE = 8
 OUT_SIZE = 1
 NUM_LAYERS = 1
 
 LSTM_PARAMS = (INPUT_SIZE, HIDDEN_SIZE, OUT_SIZE, NUM_LAYERS)
+
+# training config
+BATCH_SIZE = 64
+EPOCHS = 100
