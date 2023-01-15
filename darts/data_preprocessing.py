@@ -38,56 +38,16 @@ def eval_model(model, n, actual_series, val_series, num_samples):
     plt.legend()
     plt.show()
 
-def eval_model_2(model, series, past_covariates=None, future_covariates=None):
+def eval_model_brnn(model, series, past_covariates=None, future_covariates=None):
     backtest = model.historical_forecasts(series=series, 
                                           past_covariates=past_covariates,
                                           future_covariates=future_covariates,
                                           start=0.8, 
                                           retrain=False,
                                           verbose=True, 
-                                          forecast_horizon=16)
-    print(len(backtest), len(series)*0.2)
+                                          forecast_horizon=32)
     series[int(len(series) * 0.7):].plot()
     print('Backtest MAPE = {}'.format(mape(series, backtest)))
-    backtest.plot(label='backtest (n=4h)')
+    backtest.plot(label='backtest (n=8h)')
     plt.show()
     
-
-def test_model(model):
-    df_train = preprocess_data(pd.read_csv(os.path.join('data', 'smart-home', 'train.csv')))
-    df_test = preprocess_data(pd.read_csv("data\\smart-home\\test.csv"))
-    names = [
-        "CO2_(dinning-room)",
-        "CO2_(dinning-room)",
-        "CO2_room",
-        "Relative_humidity_(dinning-room)",
-        "Relative_humidity_room",
-        "Lighting_(dinning-room)",
-        "Lighting_room",
-        "Meteo_Rain",
-        "Meteo_Sun_dusk",
-        "Meteo_Wind",
-        "Meteo_Sun_light_in_west_facade",
-        "Meteo_Sun_light_in_east_facade",
-        "Meteo_Sun_light_in_south_facade",
-        "Meteo_Sun_irradiance",
-        "Outdoor_relative_humidity_Sensor",
-        "Day_of_the_week",
-
-        "Indoor_temperature_room"
-    ]
-
-    # series_list = [ TimeSeries.from_dataframe(df_train, "DateTime", name)[:-400] for name in names]
-    series = TimeSeries.from_dataframe(df_train, "DateTime", "Indoor_temperature_room")
-    model.fit(series[:-400])
-    prediction = model.predict(400, num_samples=1)
-    print(series.start_time(), series.end_time())
-    series.plot()
-    # prediction.plot(label="forecast", low_quantile=0.05, high_quantile=0.95)
-    plt.legend()
-    plt.show()
-
-# model = XGBModel(lags=3)
-# # model = BlockRNNModel(10, 10,)
-# # model = VARIMA()
-# test_model(model)

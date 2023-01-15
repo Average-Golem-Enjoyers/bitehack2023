@@ -8,7 +8,7 @@ from darts.utils.statistics import check_seasonality
 from darts.utils.likelihood_models import QuantileRegression
 import matplotlib.pyplot as plt
 
-from data_preprocessing import preprocess_data, eval_model
+from data_preprocessing import preprocess_data, eval_model, eval_model_brnn
 
 temperature_label = "Indoor_temperature_room"
 df_train = preprocess_data(pd.read_csv(os.path.join('data', 'smart-home', 'train.csv')))
@@ -27,12 +27,6 @@ print(training_cutoff, series_train.end_time())
 # use ice cream sales as target, create train and validation sets and transform data
 Y = series_train[temperature_label]
 
-train_temp, val_temp = Y.split_before(training_cutoff)
-transformer = Scaler()
-train_temp_transformed = transformer.fit_transform(train_temp)
-val_temp_transformed = transformer.transform(val_temp)
-Y_transformed = transformer.transform(Y)
-
 # use heater sales as past covariates and transform data
 cols = df_train.columns.drop(["DateTime", temperature_label])
 covariates = []
@@ -43,41 +37,26 @@ for col in cols:
     transformer.fit(cov_train)
     covariates.append(transformer.transform(cov_train))
 
-
-print(len(train_temp), len(covariates[0]))
-
-input_chunk_length_ice = 4
-
 # use `add_encoders` as we don't have future covariates
-my_model = TFTModel(
-    input_chunk_length=input_chunk_length_ice,
-    output_chunk_length=forecast_horizon,
+model = TFTModel(
+    input_chunk_length=64,
+    output_chunk_length=32,
     hidden_size=8,
     lstm_layers=1,
     batch_size=16,
-    n_epochs=300,
+    n_epochs=25,
     dropout=0.1,
-    add_encoders={"cyclic": {"future": ["hour"]}},
+    add_encoders={"cyclic": {"future": ["hour"], "past": ["hour"]}},
     add_relative_index=False,
     optimizer_kwargs={"lr": 1e-3},
     random_state=42,
 )
 
 # fit the model with past covariates
+train, val = Y.split_after(training_cutoff)
 
 my_multivariate_series = concatenate(covariates, axis=1)
-my_model.fit(
-    train_temp_transformed, past_covariates=my_multivariate_series, verbose=True
-)
+model.fit(train)
+prediction = model.predict(len(val), num_samples=100)
 
-print(len(train_temp_transformed))
-
-n = 200
-
-eval_model(
-    model=my_model,
-    n=n,
-    actual_series=Y_transformed[:-200],
-    val_series=val_temp_transformed,
-    num_samples=50
-)
+eval_model_brnn(model, Y)

@@ -4,8 +4,9 @@ import pandas as pd
 from darts import TimeSeries
 from darts.models import XGBModel
 import matplotlib.pyplot as plt
+from darts.metrics import mape
 
-from data_preprocessing import preprocess_data
+from data_preprocessing import preprocess_data, eval_model_brnn
 
 
 df_train = preprocess_data(pd.read_csv(os.path.join('data', 'smart-home', 'train.csv')))
@@ -13,14 +14,12 @@ df_train = preprocess_data(pd.read_csv(os.path.join('data', 'smart-home', 'train
 
 series = TimeSeries.from_dataframe(df_train, "DateTime", "Indoor_temperature_room")
 
-# Set aside the last 36 months as a validation series
-train, val = series[:-200], series[-200:]
+forecast_horizon = 200
+training_cutoff = series.time_index[-forecast_horizon]
+train, val = series.split_after(training_cutoff)
 
-model = XGBModel(lags=5)
+model = XGBModel(lags=[-1, -4, -16])
 model.fit(train)
-prediction = model.predict(len(val), num_samples=1)
+prediction = model.predict(len(val), num_samples=100)
 
-series.plot()
-prediction.plot(label="forecast", low_quantile=0.05, high_quantile=0.95)
-plt.legend()
-plt.show()
+eval_model_brnn(model, series)
