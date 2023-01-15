@@ -20,5 +20,3 @@ train, val = series.split_after(training_cutoff)
 
 model = NaiveSeasonal()
 model.fit(train)
-
-eval_model_naive(model, series)

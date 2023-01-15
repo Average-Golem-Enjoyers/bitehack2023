@@ -57,6 +57,6 @@ train, val = Y.split_after(training_cutoff)
 
 my_multivariate_series = concatenate(covariates, axis=1)
 model.fit(train)
-prediction = model.predict(len(val), num_samples=100)
+prediction = model.predict(len(val), num_samples=1)
 
 eval_model_brnn(model, Y)
